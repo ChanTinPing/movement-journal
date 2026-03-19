@@ -10,15 +10,17 @@ const today = new Intl.DateTimeFormat("en-CA", {
 }).format(new Date());
 
 function App() {
-  const [records, setRecords] = useState<DayRecord[]>(() => loadRecords());
+  const [records, setRecords] = useState<DayRecord[]>(() => ensureTodayRecord(loadRecords()));
   const [exerciseDrafts, setExerciseDrafts] = useState<DraftMap>({});
   const [loadDrafts, setLoadDrafts] = useState<DraftMap>({});
   const [entryDrafts, setEntryDrafts] = useState<DraftMap>({});
   const [addExerciseTarget, setAddExerciseTarget] = useState<string | null>(null);
   const [addLoadTarget, setAddLoadTarget] = useState<string | null>(null);
   const [quickAddTarget, setQuickAddTarget] = useState<string | null>(null);
-  const [collapsedRecords, setCollapsedRecords] = useState<Record<string, boolean>>({});
+  const [collapsedDates, setCollapsedDates] = useState<Record<string, boolean>>({});
+  const [collapsedExercises, setCollapsedExercises] = useState<Record<string, boolean>>({});
   const [editingEntryTarget, setEditingEntryTarget] = useState<string | null>(null);
+  const [deleteMode, setDeleteMode] = useState(false);
 
   useEffect(() => {
     saveRecords(records);
@@ -82,28 +84,6 @@ function App() {
     );
   }
 
-  function ensureTodayRecord() {
-    const existing = records.find((record) => record.date === today);
-    if (existing) {
-      setAddExerciseTarget(existing.id);
-      setAddLoadTarget(null);
-      setQuickAddTarget(null);
-      return;
-    }
-
-    const nextRecord: DayRecord = {
-      id: createId("day"),
-      date: today,
-      exercises: [],
-      updatedAt: new Date().toISOString(),
-    };
-
-    setRecords((current) => [nextRecord, ...current]);
-    setAddExerciseTarget(nextRecord.id);
-    setAddLoadTarget(null);
-    setQuickAddTarget(null);
-  }
-
   function addExercise(recordId: string) {
     const fieldId = `exercise-${recordId}`;
     const name = exerciseDrafts[fieldId]?.trim();
@@ -111,16 +91,16 @@ function App() {
       return;
     }
 
-    const defaultLoadGroup: LoadGroup = {
-      id: createId("load"),
-      label: "",
-      entries: [],
-    };
-
     const nextExercise: Exercise = {
       id: createId("exercise"),
       name,
-      loadGroups: [defaultLoadGroup],
+      loadGroups: [
+        {
+          id: createId("load"),
+          label: "",
+          entries: [],
+        },
+      ],
     };
 
     updateRecord(recordId, (record) => ({
@@ -130,7 +110,7 @@ function App() {
 
     setExerciseDrafts((current) => ({ ...current, [fieldId]: "" }));
     setAddExerciseTarget(null);
-    setQuickAddTarget(defaultLoadGroup.id);
+    setCollapsedDates((current) => ({ ...current, [recordId]: false }));
   }
 
   function addLoadGroup(recordId: string, exerciseId: string) {
@@ -160,7 +140,7 @@ function App() {
 
     setLoadDrafts((current) => ({ ...current, [fieldId]: "" }));
     setAddLoadTarget(null);
-    setQuickAddTarget(nextLoadGroup.id);
+    setCollapsedExercises((current) => ({ ...current, [exerciseId]: false }));
   }
 
   function addEntry(recordId: string, exerciseId: string, loadGroupId: string) {
@@ -228,10 +208,57 @@ function App() {
     setEditingEntryTarget(null);
   }
 
-  function toggleCollapsed(recordId: string) {
-    setCollapsedRecords((current) => ({
+  function toggleDate(recordId: string) {
+    setCollapsedDates((current) => ({
       ...current,
       [recordId]: !current[recordId],
+    }));
+  }
+
+  function toggleExercise(exerciseId: string) {
+    setCollapsedExercises((current) => ({
+      ...current,
+      [exerciseId]: !current[exerciseId],
+    }));
+  }
+
+  function clearDateContent(recordId: string) {
+    if (!window.confirm("确定删掉这个日期下的所有内容吗？")) {
+      return;
+    }
+
+    updateRecord(recordId, (record) => ({
+      ...record,
+      exercises: [],
+    }));
+  }
+
+  function removeExercise(recordId: string, exerciseId: string) {
+    if (!window.confirm("确定删掉这个日期下的这个动作吗？")) {
+      return;
+    }
+
+    updateRecord(recordId, (record) => ({
+      ...record,
+      exercises: record.exercises.filter((exercise) => exercise.id !== exerciseId),
+    }));
+  }
+
+  function removeLoadGroup(recordId: string, exerciseId: string, loadGroupId: string) {
+    if (!window.confirm("确定删掉这个动作下的这条负载记录吗？")) {
+      return;
+    }
+
+    updateRecord(recordId, (record) => ({
+      ...record,
+      exercises: record.exercises.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              loadGroups: exercise.loadGroups.filter((group) => group.id !== loadGroupId),
+            }
+          : exercise,
+      ),
     }));
   }
 
@@ -240,136 +267,159 @@ function App() {
       <div className="app-frame">
         <header className="app-header">
           <h1>运动日记</h1>
+          <button
+            className={deleteMode ? "delete-toggle delete-toggle--active" : "delete-toggle"}
+            onClick={() => {
+              setDeleteMode((current) => !current);
+              setAddExerciseTarget(null);
+              setAddLoadTarget(null);
+              setQuickAddTarget(null);
+            }}
+          >
+            删除
+          </button>
         </header>
 
         <main className="screen-body">
           <section className="history-list">
-            {sortedRecords.length === 0 ? (
-              <div className="empty-card">
-                <h2>还没有记录</h2>
-                <p>点右下角的 +，开始写今天的训练。</p>
-              </div>
-            ) : (
-              sortedRecords.map((record) => (
-                <article className="history-card" key={record.id}>
-                  <div className="history-card__head">
-                    <div className="date-cluster">
-                      <strong className="date-title">
-                        {formatDateHeadline(record.date)}
-                      </strong>
-                      <button
-                        className="date-add-button"
-                        onClick={() =>
-                          setAddExerciseTarget((current) =>
-                            current === record.id ? null : record.id,
-                          )
-                        }
-                        aria-label="新增动作"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <div className="card-tools">
-                      <span>{record.exercises.length} 个动作</span>
-                      <button
-                        className="collapse-button"
-                        onClick={() => toggleCollapsed(record.id)}
-                        aria-label={collapsedRecords[record.id] ? "展开日期内容" : "收起日期内容"}
-                      >
-                        {collapsedRecords[record.id] ? "▾" : "▴"}
-                      </button>
-                    </div>
+            {sortedRecords.map((record) => (
+              <article className="history-card" key={record.id}>
+                <div className="history-card__head">
+                  <div className="date-cluster">
+                    <strong className="date-title">{formatDateHeadline(record.date)}</strong>
+                    <button
+                      className={deleteMode ? "date-delete-button" : "date-add-button"}
+                      onClick={() =>
+                        deleteMode
+                          ? clearDateContent(record.id)
+                          : setAddExerciseTarget((current) =>
+                              current === record.id ? null : record.id,
+                            )
+                      }
+                      aria-label={deleteMode ? "删除日期内容" : "新增动作"}
+                    >
+                      {deleteMode ? "−" : "+"}
+                    </button>
                   </div>
 
-                  {addExerciseTarget === record.id ? (
-                    <div className="quick-add-row quick-add-row--card">
-                      <input
-                        type="text"
-                        placeholder="动作名"
-                        list="exercise-suggestions"
-                        value={exerciseDrafts[`exercise-${record.id}`] ?? ""}
-                        onChange={(event) =>
-                          setExerciseDrafts((current) => ({
-                            ...current,
-                            [`exercise-${record.id}`]: event.target.value,
-                          }))
-                        }
-                        onKeyDown={(event) => {
-                          if (event.key === "Enter") {
-                            event.preventDefault();
-                            addExercise(record.id);
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <button onClick={() => addExercise(record.id)}>加</button>
-                    </div>
-                  ) : null}
+                  <div className="card-tools">
+                    <span>{record.exercises.length} 个动作</span>
+                    <button
+                      className="collapse-button"
+                      onClick={() => toggleDate(record.id)}
+                      aria-label={collapsedDates[record.id] ? "展开日期内容" : "收起日期内容"}
+                    >
+                      {collapsedDates[record.id] ? "▾" : "▴"}
+                    </button>
+                  </div>
+                </div>
 
-                  {collapsedRecords[record.id] ? null : record.exercises.length === 0 ? (
-                    <p className="muted muted-block">这一天还没有动作</p>
-                  ) : (
-                    <div className="history-card__items">
-                      {record.exercises.map((exercise) => (
-                        <section className="history-exercise" key={exercise.id}>
-                          <div className="history-exercise__header">
-                            <div className="exercise-title-row">
+                {addExerciseTarget === record.id && !deleteMode ? (
+                  <div className="quick-add-row quick-add-row--card">
+                    <input
+                      type="text"
+                      placeholder="动作名"
+                      list="exercise-suggestions"
+                      value={exerciseDrafts[`exercise-${record.id}`] ?? ""}
+                      onChange={(event) =>
+                        setExerciseDrafts((current) => ({
+                          ...current,
+                          [`exercise-${record.id}`]: event.target.value,
+                        }))
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          addExercise(record.id);
+                        }
+                      }}
+                      autoFocus
+                    />
+                    <button onClick={() => addExercise(record.id)}>加</button>
+                  </div>
+                ) : null}
+
+                {collapsedDates[record.id] ? null : record.exercises.length === 0 ? (
+                  <p className="muted muted-block">这一天还没有动作</p>
+                ) : (
+                  <div className="history-card__items">
+                    {record.exercises.map((exercise) => (
+                      <section className="history-exercise" key={exercise.id}>
+                        <div className="history-exercise__header">
+                          <div className="exercise-title-row">
+                            <div className="exercise-title-main">
                               <div className="history-exercise__name">{exercise.name}</div>
                               <button
-                                className="exercise-add-button"
+                                className={
+                                  deleteMode ? "exercise-delete-button" : "exercise-add-button"
+                                }
                                 onClick={() =>
-                                  setAddLoadTarget((current) =>
-                                    current === exercise.id ? null : exercise.id,
-                                  )
+                                  deleteMode
+                                    ? removeExercise(record.id, exercise.id)
+                                    : setAddLoadTarget((current) =>
+                                        current === exercise.id ? null : exercise.id,
+                                      )
                                 }
-                                aria-label={`为${exercise.name}新增负载`}
+                                aria-label={deleteMode ? "删除动作" : "新增负载"}
                               >
-                                +
+                                {deleteMode ? "−" : "+"}
                               </button>
                             </div>
+
+                            <button
+                              className="exercise-collapse-button"
+                              onClick={() => toggleExercise(exercise.id)}
+                              aria-label={collapsedExercises[exercise.id] ? "展开动作内容" : "收起动作内容"}
+                            >
+                              {collapsedExercises[exercise.id] ? "▾" : "▴"}
+                            </button>
                           </div>
+                        </div>
 
-                          {addLoadTarget === exercise.id ? (
-                            <div className="quick-add-row">
-                              <input
-                                type="text"
-                                placeholder="负载"
-                                list={`load-suggestions-${exercise.id}`}
-                                value={loadDrafts[`load-${exercise.id}`] ?? ""}
-                                onChange={(event) =>
-                                  setLoadDrafts((current) => ({
-                                    ...current,
-                                    [`load-${exercise.id}`]: event.target.value,
-                                  }))
-                                }
-                                onKeyDown={(event) => {
-                                  if (event.key === "Enter") {
-                                    event.preventDefault();
-                                    addLoadGroup(record.id, exercise.id);
+                        {collapsedExercises[exercise.id] ? null : (
+                          <>
+                            {addLoadTarget === exercise.id && !deleteMode ? (
+                              <div className="quick-add-row">
+                                <input
+                                  type="text"
+                                  placeholder="负载"
+                                  list={`load-suggestions-${exercise.id}`}
+                                  value={loadDrafts[`load-${exercise.id}`] ?? ""}
+                                  onChange={(event) =>
+                                    setLoadDrafts((current) => ({
+                                      ...current,
+                                      [`load-${exercise.id}`]: event.target.value,
+                                    }))
                                   }
-                                }}
-                                autoFocus
-                              />
-                              <button onClick={() => addLoadGroup(record.id, exercise.id)}>
-                                加
-                              </button>
-                            </div>
-                          ) : null}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      event.preventDefault();
+                                      addLoadGroup(record.id, exercise.id);
+                                    }
+                                  }}
+                                  autoFocus
+                                />
+                                <button onClick={() => addLoadGroup(record.id, exercise.id)}>
+                                  加
+                                </button>
+                              </div>
+                            ) : null}
 
-                          <div className="history-exercise__loads">
-                            {exercise.loadGroups.map((group) => (
-                              <div className="history-load-block" key={group.id}>
-                                <div className="history-load-row">
-                                  <div className="load-content">
-                                    <span className="load-label spacer-label">
-                                      {group.label || ""}
-                                    </span>
-                                    <div className="entry-edit-row">
-                                      {group.entries.length > 0
-                                        ? group.entries.map((entry, entryIndex) => {
+                            <div className="history-exercise__loads">
+                              {exercise.loadGroups.length === 0 ? (
+                                <p className="muted">这个动作还没有负载</p>
+                              ) : (
+                                exercise.loadGroups.map((group) => (
+                                  <div className="history-load-block" key={group.id}>
+                                    <div className="history-load-row">
+                                      <div className="load-content">
+                                        <span className="load-label">
+                                          {group.label || "默认"}
+                                        </span>
+                                        <div className="entry-edit-row">
+                                          {group.entries.map((entry, entryIndex) => {
                                             const entryId = `edit-${group.id}-${entryIndex}`;
-                                            const isEditing =
-                                              editingEntryTarget === entryId;
+                                            const isEditing = editingEntryTarget === entryId;
 
                                             return isEditing ? (
                                               <input
@@ -414,70 +464,78 @@ function App() {
                                                 {entry}
                                               </button>
                                             );
-                                          })
-                                        : null}
-                                    </div>
-                                  </div>
-                                  <button
-                                    className="entry-add-button"
-                                    onClick={() =>
-                                      setQuickAddTarget((current) =>
-                                        current === group.id ? null : group.id,
-                                      )
-                                    }
-                                    aria-label={`为${exercise.name}补次数`}
-                                  >
-                                    +
-                                  </button>
-                                </div>
+                                          })}
+                                        </div>
+                                      </div>
 
-                                {quickAddTarget === group.id ? (
-                                  <div className="quick-add-row">
-                                    <input
-                                      type="text"
-                                      placeholder="数字"
-                                      value={entryDrafts[`entry-${group.id}`] ?? ""}
-                                      onChange={(event) =>
-                                        setEntryDrafts((current) => ({
-                                          ...current,
-                                          [`entry-${group.id}`]: event.target.value,
-                                        }))
-                                      }
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter") {
-                                          event.preventDefault();
-                                          addEntry(record.id, exercise.id, group.id);
+                                      <button
+                                        className={
+                                          deleteMode
+                                            ? "load-delete-button"
+                                            : "entry-add-button"
                                         }
-                                      }}
-                                      autoFocus
-                                    />
-                                    <button
-                                      onClick={() =>
-                                        addEntry(record.id, exercise.id, group.id)
-                                      }
-                                    >
-                                      加
-                                    </button>
-                                  </div>
-                                ) : null}
-                              </div>
-                            ))}
-                          </div>
+                                        onClick={() =>
+                                          deleteMode
+                                            ? removeLoadGroup(record.id, exercise.id, group.id)
+                                            : setQuickAddTarget((current) =>
+                                                current === group.id ? null : group.id,
+                                              )
+                                        }
+                                        aria-label={deleteMode ? "删除负载行" : "补次数"}
+                                      >
+                                        {deleteMode ? "−" : "+"}
+                                      </button>
+                                    </div>
 
-                          <datalist id={`load-suggestions-${exercise.id}`}>
-                            {(loadSuggestionsByExercise[exercise.name.trim()] ?? []).map(
-                              (label) => (
-                                <option key={label} value={label} />
-                              ),
-                            )}
-                          </datalist>
-                        </section>
-                      ))}
-                    </div>
-                  )}
-                </article>
-              ))
-            )}
+                                    {quickAddTarget === group.id && !deleteMode ? (
+                                      <div className="quick-add-row">
+                                        <input
+                                          type="text"
+                                          placeholder="数字"
+                                          value={entryDrafts[`entry-${group.id}`] ?? ""}
+                                          onChange={(event) =>
+                                            setEntryDrafts((current) => ({
+                                              ...current,
+                                              [`entry-${group.id}`]: event.target.value,
+                                            }))
+                                          }
+                                          onKeyDown={(event) => {
+                                            if (event.key === "Enter") {
+                                              event.preventDefault();
+                                              addEntry(record.id, exercise.id, group.id);
+                                            }
+                                          }}
+                                          autoFocus
+                                        />
+                                        <button
+                                          onClick={() =>
+                                            addEntry(record.id, exercise.id, group.id)
+                                          }
+                                        >
+                                          加
+                                        </button>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        <datalist id={`load-suggestions-${exercise.id}`}>
+                          {(loadSuggestionsByExercise[exercise.name.trim()] ?? []).map(
+                            (label) => (
+                              <option key={label} value={label} />
+                            ),
+                          )}
+                        </datalist>
+                      </section>
+                    ))}
+                  </div>
+                )}
+              </article>
+            ))}
           </section>
 
           <datalist id="exercise-suggestions">
@@ -485,14 +543,26 @@ function App() {
               <option key={name} value={name} />
             ))}
           </datalist>
-
-          <button className="fab" onClick={ensureTodayRecord} aria-label="新增今天记录">
-            +
-          </button>
         </main>
       </div>
     </div>
   );
+}
+
+function ensureTodayRecord(records: DayRecord[]) {
+  if (records.some((record) => record.date === today)) {
+    return records;
+  }
+
+  return [
+    {
+      id: createId("day"),
+      date: today,
+      exercises: [],
+      updatedAt: new Date().toISOString(),
+    },
+    ...records,
+  ];
 }
 
 export default App;
