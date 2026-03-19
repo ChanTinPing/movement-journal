@@ -299,14 +299,18 @@ input:focus {
   width: 46px;
   height: 46px;
   flex: 0 0 46px;
-  font-size: 1.45rem;
+  font-size: 2.15rem;
+  line-height: 0.8;
+  font-weight: 900;
 }
 
 .exercise-collapse-button {
   width: 40px;
   height: 40px;
   flex: 0 0 40px;
-  font-size: 1.25rem;
+  font-size: 1.85rem;
+  line-height: 0.8;
+  font-weight: 900;
 }
 
 .date-add-button,
