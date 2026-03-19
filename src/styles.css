@@ -1,0 +1,328 @@
+:root {
+  font-family: "Microsoft YaHei UI", "PingFang SC", sans-serif;
+  color: #1f2937;
+  background:
+    radial-gradient(circle at top, rgba(242, 212, 146, 0.65), transparent 36%),
+    linear-gradient(180deg, #f6efe3 0%, #f3f2ef 46%, #ece8df 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --card-bg: rgba(255, 252, 245, 0.92);
+  --card-border: rgba(122, 93, 51, 0.14);
+  --card-shadow: 0 20px 45px rgba(99, 74, 35, 0.12);
+  --text-soft: #6a645c;
+  --accent: #355c49;
+  --accent-soft: #e3eee8;
+  --danger: #a14b3c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+}
+
+input {
+  width: 100%;
+  border: 1px solid rgba(53, 92, 73, 0.14);
+  border-radius: 16px;
+  padding: 0.85rem 0.95rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: inherit;
+}
+
+input:focus {
+  outline: 2px solid rgba(53, 92, 73, 0.18);
+  border-color: rgba(53, 92, 73, 0.24);
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 1.2rem;
+}
+
+.app-frame {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  min-height: calc(100vh - 2.4rem);
+  background: rgba(249, 244, 235, 0.76);
+  border: 1px solid rgba(111, 92, 62, 0.1);
+  border-radius: 28px;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+  position: relative;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.4rem 1.4rem 1rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.app-header p {
+  margin: 0.35rem 0 0;
+  color: var(--text-soft);
+}
+
+.screen-body {
+  padding: 0 1rem 5.8rem;
+}
+
+.history-list,
+.stack {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.history-card,
+.empty-card,
+.exercise-card,
+.add-card,
+.load-card,
+.editor-top {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  box-shadow: 0 12px 30px rgba(93, 78, 49, 0.08);
+}
+
+.history-card {
+  width: 100%;
+  padding: 1rem;
+  text-align: left;
+}
+
+.history-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.history-card__head strong,
+.history-exercise__name {
+  display: block;
+  font-size: 1rem;
+}
+
+.history-card__head span,
+.muted {
+  color: var(--text-soft);
+}
+
+.history-card__items {
+  margin-top: 0.8rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.history-exercise {
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(122, 93, 51, 0.1);
+}
+
+.history-exercise__loads p {
+  margin: 0.35rem 0 0;
+  color: #2d3d36;
+}
+
+.load-label {
+  display: inline-block;
+  min-width: 3.5rem;
+  margin-right: 0.6rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.fab {
+  position: sticky;
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #355c49, #48745f);
+  color: white;
+  font-size: 2rem;
+  box-shadow: 0 16px 34px rgba(53, 92, 73, 0.34);
+  bottom: 1.2rem;
+}
+
+.editor-top,
+.empty-card,
+.exercise-card,
+.add-card,
+.load-card {
+  padding: 1rem;
+}
+
+.editor-top {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.field span {
+  font-size: 0.92rem;
+  color: var(--text-soft);
+}
+
+.inline-row {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+
+.inline-row button,
+.ghost-button,
+.danger-button {
+  white-space: nowrap;
+  border-radius: 16px;
+  padding: 0.8rem 1rem;
+}
+
+.inline-row button,
+.danger-button {
+  background: var(--accent);
+  color: white;
+}
+
+.ghost-button {
+  background: rgba(53, 92, 73, 0.08);
+  color: var(--accent);
+}
+
+.danger-button,
+.danger-text {
+  color: white;
+}
+
+.danger-button {
+  background: var(--danger);
+}
+
+.danger-text {
+  color: var(--danger);
+  background: rgba(161, 75, 60, 0.08);
+}
+
+.exercise-card__header {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-bottom: 0.9rem;
+}
+
+.exercise-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.exercise-name:focus {
+  outline: none;
+  border: none;
+}
+
+.entry-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0.9rem 0;
+}
+
+.entry-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 18px;
+  background: var(--accent-soft);
+}
+
+.entry-chip input {
+  min-width: 3.5rem;
+  width: auto;
+  padding: 0.45rem 0.55rem;
+  border: none;
+  background: transparent;
+}
+
+.entry-chip input:focus {
+  outline: none;
+}
+
+.chip-remove {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(53, 92, 73, 0.12);
+  color: var(--accent);
+  font-size: 1rem;
+}
+
+.add-load-button {
+  width: 100%;
+  margin-top: 0.9rem;
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding: 0;
+  }
+
+  .app-frame {
+    width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+  }
+
+  .screen-body {
+    padding: 0 0.9rem 5.2rem;
+  }
+
+  .app-header {
+    padding: 1.1rem 0.9rem 0.8rem;
+  }
+
+  .inline-row,
+  .exercise-card__header,
+  .history-card__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
