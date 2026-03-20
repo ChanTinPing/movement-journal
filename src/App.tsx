@@ -426,13 +426,10 @@ function App() {
                             {deleteMode ? "−" : "+"}
                           </button>
                         </div>
-
-                        <div className="card-tools">
-                          <span>{record.exercises.length} 个动作</span>
-                          <button className="collapse-button" onClick={() => toggleDate(record.id)}>
-                            {collapsedDates[record.id] ? "▾" : "▴"}
-                          </button>
-                        </div>
+                        <span className="record-count">{record.exercises.length} 个动作</span>
+                        <button className="collapse-button" onClick={() => toggleDate(record.id)}>
+                          {collapsedDates[record.id] ? "▾" : "▴"}
+                        </button>
                       </div>
 
                       {addExerciseTarget === record.id && !deleteMode ? (
@@ -487,14 +484,13 @@ function App() {
                                       {deleteMode ? "−" : "+"}
                                     </button>
                                   </div>
-                                  <div className="exercise-right-tools">
-                                    <button
-                                      className="exercise-collapse-button"
-                                      onClick={() => toggleExercise(exercise.id)}
-                                    >
-                                      {collapsedExercises[exercise.id] ? "▾" : "▴"}
-                                    </button>
-                                  </div>
+                                  <span className="row-meta-spacer" />
+                                  <button
+                                    className="exercise-collapse-button"
+                                    onClick={() => toggleExercise(exercise.id)}
+                                  >
+                                    {collapsedExercises[exercise.id] ? "▾" : "▴"}
+                                  </button>
                                 </div>
                               </div>
 

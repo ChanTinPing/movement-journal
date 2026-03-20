@@ -156,7 +156,13 @@ input:focus {
 }
 
 .history-card__head,
-.exercise-title-row,
+.exercise-title-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.7rem 46px;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
 .history-load-row {
   justify-content: space-between;
   gap: 0.75rem;
@@ -181,14 +187,16 @@ input:focus {
 .card-tools {
   color: var(--text-soft);
   white-space: nowrap;
-  width: 6.6rem;
-  justify-content: space-between;
 }
 
-.exercise-right-tools {
-  width: 6.6rem;
-  display: flex;
-  justify-content: flex-end;
+.record-count,
+.row-meta-spacer {
+  justify-self: end;
+}
+
+.record-count {
+  color: var(--text-soft);
+  white-space: nowrap;
 }
 
 .history-card__items {
@@ -407,6 +415,7 @@ input:focus {
   width: 46px;
   height: 46px;
   flex: 0 0 46px;
+  justify-self: end;
   font-size: 2.15rem;
   line-height: 0.8;
   font-weight: 900;
@@ -416,7 +425,7 @@ input:focus {
   width: 46px;
   height: 46px;
   flex: 0 0 46px;
-  margin-left: auto;
+  justify-self: end;
   font-size: 1.85rem;
   line-height: 0.8;
   font-weight: 900;
