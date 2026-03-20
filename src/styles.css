@@ -128,6 +128,7 @@ input:focus {
 .exercise-title-row,
 .history-load-row,
 .load-content,
+.load-inline-group,
 .entry-edit-row,
 .quick-add-row {
   display: flex;
@@ -145,6 +146,7 @@ input:focus {
 .exercise-title-main,
 .card-tools,
 .load-content,
+.load-inline-group,
 .entry-edit-row,
 .quick-add-row {
   gap: 0.55rem;
@@ -194,9 +196,15 @@ input:focus {
   font-weight: 700;
 }
 
-.entry-edit-row {
+.load-inline-group {
   min-width: 0;
   flex: 1;
+  justify-content: flex-start;
+}
+
+.entry-edit-row {
+  min-width: 0;
+  flex: 0 1 auto;
   flex-wrap: wrap;
   gap: 0.16rem;
 }
@@ -243,7 +251,7 @@ input:focus {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  margin-left: calc(3.5rem + 0.7rem);
+  margin-left: calc(4.2rem + 0.7rem);
 }
 
 .tail-insert-confirm {
@@ -319,7 +327,7 @@ input:focus {
 
 .collapse-button,
 .exercise-collapse-button {
-  background: var(--green-soft);
+  background: transparent;
   color: var(--green-strong);
 }
 
@@ -365,7 +373,15 @@ input:focus {
 }
 
 .entry-add-button--tail {
-  margin-left: 0.12rem;
+  margin-left: 0;
+}
+
+.today-add-button {
+  margin-top: 0.85rem;
+  border-radius: 18px;
+  padding: 0.78rem 1rem;
+  background: rgba(46, 107, 83, 0.1);
+  color: var(--green-strong);
 }
 
 @media (max-width: 520px) {

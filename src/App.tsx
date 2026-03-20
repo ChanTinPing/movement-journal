@@ -14,7 +14,7 @@ const today = new Intl.DateTimeFormat("en-CA", {
 }).format(new Date());
 
 function App() {
-  const [records, setRecords] = useState<DayRecord[]>(() => ensureTodayRecord(loadRecords()));
+  const [records, setRecords] = useState<DayRecord[]>(() => loadRecords());
   const [exerciseDrafts, setExerciseDrafts] = useState<DraftMap>({});
   const [loadDrafts, setLoadDrafts] = useState<DraftMap>({});
   const [entryDrafts, setEntryDrafts] = useState<DraftMap>({});
@@ -115,6 +115,24 @@ function App() {
     setExerciseDrafts((current) => ({ ...current, [fieldId]: "" }));
     setAddExerciseTarget(null);
     setCollapsedDates((current) => ({ ...current, [recordId]: false }));
+  }
+
+  function addTodayRecord() {
+    const existing = records.find((record) => record.date === today);
+    if (existing) {
+      setAddExerciseTarget((current) => (current === existing.id ? null : existing.id));
+      return;
+    }
+
+    const nextRecord: DayRecord = {
+      id: createId("day"),
+      date: today,
+      exercises: [],
+      updatedAt: new Date().toISOString(),
+    };
+
+    setRecords((current) => [nextRecord, ...current]);
+    setAddExerciseTarget(nextRecord.id);
   }
 
   function addLoadGroup(recordId: string, exerciseId: string) {
@@ -360,6 +378,11 @@ function App() {
 
         <main className="screen-body">
           <section className="history-list">
+            {sortedRecords.length === 0 ? (
+              <div className="history-card">
+                <p className="muted">还没有记录</p>
+              </div>
+            ) : null}
             {sortedRecords.map((record) => (
               <article className="history-card" key={record.id}>
                 <div className="history-card__head">
@@ -485,109 +508,111 @@ function App() {
                                     <div className="history-load-row">
                                       <span className="load-label">{group.label || "默认"}</span>
 
-                                      <button
-                                        className="insert-anchor-button"
-                                        onClick={() => toggleInsertTarget(group.id, 0)}
-                                      >
-                                        |
-                                      </button>
+                                      <div className="load-inline-group">
+                                        <button
+                                          className="insert-anchor-button"
+                                          onClick={() => toggleInsertTarget(group.id, 0)}
+                                        >
+                                          |
+                                        </button>
 
-                                      <div className="entry-edit-row">
-                                        {renderInsertInput(
-                                          record.id,
-                                          exercise.id,
-                                          group.id,
-                                          0,
-                                        )}
+                                        <div className="entry-edit-row">
+                                          {renderInsertInput(
+                                            record.id,
+                                            exercise.id,
+                                            group.id,
+                                            0,
+                                          )}
 
-                                        {group.entries.map((entry, entryIndex) => {
-                                          const entryId = `edit-${group.id}-${entryIndex}`;
-                                          const isEditing = editingEntryTarget === entryId;
+                                          {group.entries.map((entry, entryIndex) => {
+                                            const entryId = `edit-${group.id}-${entryIndex}`;
+                                            const isEditing = editingEntryTarget === entryId;
 
-                                          return (
-                                            <span className="entry-fragment" key={entryId}>
-                                              {isEditing ? (
-                                                <input
-                                                  className="entry-inline-input"
-                                                  value={entryDrafts[entryId] ?? ""}
-                                                  onChange={(event) =>
-                                                    setEntryDrafts((current) => ({
-                                                      ...current,
-                                                      [entryId]: event.target.value,
-                                                    }))
-                                                  }
-                                                  onBlur={() =>
-                                                    saveEditedEntry(
-                                                      record.id,
-                                                      exercise.id,
-                                                      group.id,
-                                                      entryIndex,
-                                                    )
-                                                  }
-                                                  onKeyDown={(event) => {
-                                                    if (event.key === "Enter") {
-                                                      event.preventDefault();
+                                            return (
+                                              <span className="entry-fragment" key={entryId}>
+                                                {isEditing ? (
+                                                  <input
+                                                    className="entry-inline-input"
+                                                    value={entryDrafts[entryId] ?? ""}
+                                                    onChange={(event) =>
+                                                      setEntryDrafts((current) => ({
+                                                        ...current,
+                                                        [entryId]: event.target.value,
+                                                      }))
+                                                    }
+                                                    onBlur={() =>
                                                       saveEditedEntry(
                                                         record.id,
                                                         exercise.id,
                                                         group.id,
                                                         entryIndex,
-                                                      );
-                                                    }
-                                                  }}
-                                                  autoFocus
-                                                />
-                                              ) : (
-                                                <button
-                                                  className="entry-chip-button"
-                                                  onClick={() =>
-                                                    startEditingEntry(entryId, entry)
-                                                  }
-                                                >
-                                                  {entry}
-                                                </button>
-                                              )}
-
-                                              {entryIndex < group.entries.length - 1 ? (
-                                                <>
-                                                  <button
-                                                    className="insert-slash-button"
-                                                    onClick={() =>
-                                                      toggleInsertTarget(
-                                                        group.id,
-                                                        entryIndex + 1,
                                                       )
                                                     }
+                                                    onKeyDown={(event) => {
+                                                      if (event.key === "Enter") {
+                                                        event.preventDefault();
+                                                        saveEditedEntry(
+                                                          record.id,
+                                                          exercise.id,
+                                                          group.id,
+                                                          entryIndex,
+                                                        );
+                                                      }
+                                                    }}
+                                                    autoFocus
+                                                  />
+                                                ) : (
+                                                  <button
+                                                    className="entry-chip-button"
+                                                    onClick={() =>
+                                                      startEditingEntry(entryId, entry)
+                                                    }
                                                   >
-                                                    /
+                                                    {entry}
                                                   </button>
-                                                  {renderInsertInput(
-                                                    record.id,
-                                                    exercise.id,
-                                                    group.id,
-                                                    entryIndex + 1,
-                                                  )}
-                                                </>
-                                              ) : null}
-                                            </span>
-                                          );
-                                        })}
-                                      </div>
+                                                )}
 
-                                      <button
-                                        className={
-                                          deleteMode
-                                            ? "load-delete-button"
-                                            : "entry-add-button entry-add-button--tail"
-                                        }
-                                        onClick={() =>
-                                          deleteMode
-                                            ? removeLoadGroup(record.id, exercise.id, group.id)
-                                            : toggleInsertTarget(group.id, group.entries.length)
-                                        }
-                                      >
-                                        {deleteMode ? "−" : "+"}
-                                      </button>
+                                                {entryIndex < group.entries.length - 1 ? (
+                                                  <>
+                                                    <button
+                                                      className="insert-slash-button"
+                                                      onClick={() =>
+                                                        toggleInsertTarget(
+                                                          group.id,
+                                                          entryIndex + 1,
+                                                        )
+                                                      }
+                                                    >
+                                                      /
+                                                    </button>
+                                                    {renderInsertInput(
+                                                      record.id,
+                                                      exercise.id,
+                                                      group.id,
+                                                      entryIndex + 1,
+                                                    )}
+                                                  </>
+                                                ) : null}
+                                              </span>
+                                            );
+                                          })}
+                                        </div>
+
+                                        <button
+                                          className={
+                                            deleteMode
+                                              ? "load-delete-button"
+                                              : "entry-add-button entry-add-button--tail"
+                                          }
+                                          onClick={() =>
+                                            deleteMode
+                                              ? removeLoadGroup(record.id, exercise.id, group.id)
+                                              : toggleInsertTarget(group.id, group.entries.length)
+                                          }
+                                        >
+                                          {deleteMode ? "−" : "+"}
+                                        </button>
+                                      </div>
                                     </div>
 
                                     {group.entries.length > 0 &&
@@ -642,26 +667,14 @@ function App() {
               <option key={name} value={name} />
             ))}
           </datalist>
+
+          <button className="today-add-button" onClick={addTodayRecord}>
+            今天 +
+          </button>
         </main>
       </div>
     </div>
   );
-}
-
-function ensureTodayRecord(records: DayRecord[]) {
-  if (records.some((record) => record.date === today)) {
-    return records;
-  }
-
-  return [
-    {
-      id: createId("day"),
-      date: today,
-      exercises: [],
-      updatedAt: new Date().toISOString(),
-    },
-    ...records,
-  ];
 }
 
 export default App;
